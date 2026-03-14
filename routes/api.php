@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WhatsAppController;
+use App\Http\Controllers\TelegramController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,3 +20,9 @@ use App\Http\Controllers\WhatsAppController;
 Route::post('/whatsapp/webhook', [WhatsAppController::class, 'handleWebhook'])
     ->withoutMiddleware(['api'])
     ->name('whatsapp.webhook');
+
+// Telegram webhook endpoint
+// This receives incoming Telegram bot messages
+Route::post('/telegram/webhook', [TelegramController::class, 'handleWebhook'])
+    ->withoutMiddleware(['api'])
+    ->name('telegram.webhook');

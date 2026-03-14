@@ -54,4 +54,8 @@ return [
         'auth_token' => env('TWILIO_AUTH_TOKEN'),
     ],
 
+    'telegram' => [
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+    ],
+
 ];

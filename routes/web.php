@@ -11,6 +11,8 @@ Route::get('/', function () {
 // Health check endpoint - no middleware
 Route::get('/health', [HealthController::class, 'check']);
 
-// WhatsApp webhook endpoint from Twilio
-Route::post('/webhook/whatsapp', [WhatsAppController::class, 'handle'])
-    ->middleware('throttle:60,1');
+// WhatsApp webhook endpoint from Twilio (supports both routes)
+Route::post('/webhook/whatsapp', [WhatsAppController::class, 'handleWebhook'])
+    ->withoutMiddleware(['web'])
+    ->name('whatsapp.webhook.legacy');
+

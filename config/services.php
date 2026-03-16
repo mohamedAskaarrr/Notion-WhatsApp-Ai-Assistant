@@ -1,61 +1,39 @@
 <?php
 
 return [
-
-    /*
-    |--------------------------------------------------------------------------
-    | Third Party Services
-    |--------------------------------------------------------------------------
-    |
-    | This file is for storing the credentials for third party services such
-    | as Mailgun, Postmark, AWS and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
-    |
-    */
-
-    'postmark' => [
-        'key' => env('POSTMARK_API_KEY'),
+    'mailgun' => [
+        'domain'   => env('MAILGUN_DOMAIN'),
+        'secret'   => env('MAILGUN_SECRET'),
+        'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
+        'scheme'   => 'https',
     ],
 
-    'resend' => [
-        'key' => env('RESEND_API_KEY'),
+    'postmark' => [
+        'token' => env('POSTMARK_TOKEN'),
     ],
 
     'ses' => [
-        'key' => env('AWS_ACCESS_KEY_ID'),
+        'key'    => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'slack' => [
-        'notifications' => [
-            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
-        ],
-    ],
-
-    'openai' => [
-        'key' => env('OPENAI_API_KEY'),
+    'telegram' => [
+        'bot_token'    => env('TELEGRAM_BOT_TOKEN'),
+        'secret_token' => env('TELEGRAM_WEBHOOK_SECRET'),
     ],
 
     'gemini' => [
-        'key' => env('GEMINI_API_KEY'),
+        'api_key' => env('GEMINI_API_KEY'),
+        'model'   => env('GEMINI_MODEL', 'gemini-1.5-flash'),
     ],
 
     'notion' => [
-        'token' => env('NOTION_TOKEN'),
-        'database_tasks' => env('NOTION_DATABASE_TASKS'),
-        'database_ideas' => env('NOTION_DATABASE_IDEAS'),
+        'api_key'           => env('NOTION_API_KEY'),
+        'tasks_database_id' => env('NOTION_TASKS_DATABASE_ID'),
+        'ideas_database_id' => env('NOTION_IDEAS_DATABASE_ID'),
+        'version'           => env('NOTION_VERSION', '2022-06-28'),
+        // Name of the date property in your Notion databases (used for "today" / "this week" filters)
+        'date_property'     => env('NOTION_DATE_PROPERTY', 'Date'),
     ],
-
-    'twilio' => [
-        'account_sid' => env('TWILIO_ACCOUNT_SID'),
-        'auth_token' => env('TWILIO_AUTH_TOKEN'),
-    ],
-
-    'telegram' => [
-        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
-    ],
-
 ];

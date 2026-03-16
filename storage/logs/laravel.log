@@ -1,0 +1,46 @@
+[2026-03-14 06:58:35] laravel.EMERGENCY: Unable to create configured logger. Using emergency logger. {"exception":"[object] (InvalidArgumentException(code: 0): Log [] is not defined. at /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Log/LogManager.php:212)
+[stacktrace]
+#0 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Log/LogManager.php(137): Illuminate\\Log\\LogManager->resolve()
+#1 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Log/LogManager.php(124): Illuminate\\Log\\LogManager->get()
+#2 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Log/LogManager.php(681): Illuminate\\Log\\LogManager->driver()
+#3 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(317): Illuminate\\Log\\LogManager->error()
+#4 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(278): Illuminate\\Foundation\\Exceptions\\Handler->reportThrowable()
+#5 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(523): Illuminate\\Foundation\\Exceptions\\Handler->report()
+#6 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(203): Illuminate\\Foundation\\Console\\Kernel->reportException()
+#7 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/artisan(12): Illuminate\\Foundation\\Console\\Kernel->handle()
+#8 {main}
+"} 
+[2026-03-14 06:58:35] laravel.ERROR: Unable to load the "app" configuration file. {"exception":"[object] (Exception(code: 0): Unable to load the \"app\" configuration file. at /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/LoadConfiguration.php:66)
+[stacktrace]
+#0 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/LoadConfiguration.php(39): Illuminate\\Foundation\\Bootstrap\\LoadConfiguration->loadConfigurationFiles()
+#1 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(286): Illuminate\\Foundation\\Bootstrap\\LoadConfiguration->bootstrap()
+#2 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(447): Illuminate\\Foundation\\Application->bootstrapWith()
+#3 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(199): Illuminate\\Foundation\\Console\\Kernel->bootstrap()
+#4 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/artisan(12): Illuminate\\Foundation\\Console\\Kernel->handle()
+#5 {main}
+"} 
+[2026-03-14 06:58:56] laravel.EMERGENCY: Unable to create configured logger. Using emergency logger. {"exception":"[object] (InvalidArgumentException(code: 0): Log [] is not defined. at /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Log/LogManager.php:212)
+[stacktrace]
+#0 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Log/LogManager.php(137): Illuminate\\Log\\LogManager->resolve()
+#1 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Log/LogManager.php(124): Illuminate\\Log\\LogManager->get()
+#2 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Log/LogManager.php(681): Illuminate\\Log\\LogManager->driver()
+#3 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(317): Illuminate\\Log\\LogManager->error()
+#4 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Exceptions/Handler.php(278): Illuminate\\Foundation\\Exceptions\\Handler->reportThrowable()
+#5 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(523): Illuminate\\Foundation\\Exceptions\\Handler->report()
+#6 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(203): Illuminate\\Foundation\\Console\\Kernel->reportException()
+#7 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/artisan(12): Illuminate\\Foundation\\Console\\Kernel->handle()
+#8 {main}
+"} 
+[2026-03-14 06:58:56] laravel.ERROR: The /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/bootstrap/cache directory must be present and writable. {"exception":"[object] (Exception(code: 0): The /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/bootstrap/cache directory must be present and writable. at /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php:178)
+[stacktrace]
+#0 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php(131): Illuminate\\Foundation\\PackageManifest->write()
+#1 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php(107): Illuminate\\Foundation\\PackageManifest->build()
+#2 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php(90): Illuminate\\Foundation\\PackageManifest->getManifest()
+#3 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/PackageManifest.php(79): Illuminate\\Foundation\\PackageManifest->config()
+#4 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Bootstrap/RegisterFacades.php(26): Illuminate\\Foundation\\PackageManifest->aliases()
+#5 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(286): Illuminate\\Foundation\\Bootstrap\\RegisterFacades->bootstrap()
+#6 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(447): Illuminate\\Foundation\\Application->bootstrapWith()
+#7 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(199): Illuminate\\Foundation\\Console\\Kernel->bootstrap()
+#8 /home/runner/work/Notion-WhatsApp-Ai-Assistant/Notion-WhatsApp-Ai-Assistant/artisan(12): Illuminate\\Foundation\\Console\\Kernel->handle()
+#9 {main}
+"} 

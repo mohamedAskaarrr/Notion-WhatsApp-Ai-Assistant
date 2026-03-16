@@ -203,6 +203,75 @@ class GeminiServiceTest extends TestCase
         $this->assertEquals('tasks', $result['database']);
     }
 
+    public function test_parse_intent_from_audio_sends_inline_data_and_returns_correct_structure(): void
+    {
+        $geminiResponse = [
+            'candidates' => [
+                [
+                    'content' => [
+                        'parts' => [
+                            [
+                                'text' => json_encode([
+                                    'action'     => 'add_to_database',
+                                    'database'   => 'tasks',
+                                    'title'      => 'Fix login bug',
+                                    'content'    => '',
+                                    'properties' => [],
+                                ]),
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $httpClient = Mockery::mock(ClientInterface::class);
+        $httpClient->shouldReceive('request')
+            ->once()
+            ->withArgs(function ($method, $url, $options) {
+                // Must be a POST to Gemini with inline_data in the content parts
+                $parts = $options['json']['contents'][0]['parts'] ?? [];
+                $hasInlineData = false;
+                foreach ($parts as $part) {
+                    if (isset($part['inline_data']['mime_type'])) {
+                        $hasInlineData = true;
+                        break;
+                    }
+                }
+
+                return $method === 'POST'
+                    && str_contains($url, 'generativelanguage.googleapis.com')
+                    && $hasInlineData;
+            })
+            ->andReturn(new Response(200, [], json_encode($geminiResponse)));
+
+        $service = $this->createService($httpClient);
+        $result  = $service->parseIntentFromAudio(base64_encode('fake-ogg-data'), 'audio/ogg');
+
+        $this->assertIsArray($result);
+        $this->assertEquals('add_to_database', $result['action']);
+        $this->assertEquals('tasks', $result['database']);
+        $this->assertEquals('Fix login bug', $result['title']);
+    }
+
+    public function test_parse_intent_from_audio_throws_on_http_error(): void
+    {
+        $httpClient = Mockery::mock(ClientInterface::class);
+        $httpClient->shouldReceive('request')
+            ->once()
+            ->andThrow(new \GuzzleHttp\Exception\ConnectException(
+                'Connection refused',
+                new \GuzzleHttp\Psr7\Request('POST', 'https://generativelanguage.googleapis.com')
+            ));
+
+        $service = $this->createService($httpClient);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/Failed to call Gemini API/');
+
+        $service->parseIntentFromAudio(base64_encode('audio'), 'audio/ogg');
+    }
+
     private function createService(ClientInterface $httpClient): GeminiService
     {
         return new class($httpClient) extends GeminiService {

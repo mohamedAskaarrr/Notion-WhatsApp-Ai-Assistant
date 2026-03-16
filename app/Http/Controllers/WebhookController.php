@@ -19,15 +19,24 @@ class WebhookController extends Controller
 
     public function handle(Request $request): JsonResponse
     {
-        $messageText = $request->input('message.text', '');
-        $chatId      = $request->input('message.chat.id');
+        $chatId = $request->input('message.chat.id');
+        $text   = $request->input('message.text', '');
+        $voice  = $request->input('message.voice');
 
-        if (empty($messageText) || empty($chatId)) {
+        if (empty($chatId)) {
+            return new JsonResponse(['ok' => true]);
+        }
+
+        // Ignore updates that carry neither text nor a voice note
+        if (empty($text) && empty($voice)) {
             return new JsonResponse(['ok' => true]);
         }
 
         try {
-            $parsedIntent = $this->geminiService->parseIntent($messageText);
+            $parsedIntent = !empty($voice)
+                ? $this->handleVoiceMessage($voice)
+                : $this->geminiService->parseIntent($text);
+
             $result       = $this->executeNotionAction($parsedIntent);
             $replyMessage = $this->buildReplyMessage($parsedIntent, $result);
         } catch (\Exception $e) {
@@ -39,9 +48,31 @@ class WebhookController extends Controller
         return new JsonResponse(['ok' => true]);
     }
 
+    // -------------------------------------------------------------------------
+    // Voice handling
+    // -------------------------------------------------------------------------
+
+    private function handleVoiceMessage(array $voice): array
+    {
+        $fileId   = $voice['file_id']   ?? '';
+        $mimeType = $voice['mime_type'] ?? 'audio/ogg';
+
+        $fileData = $this->telegramBot->downloadVoiceFile($fileId);
+
+        return $this->geminiService->parseIntentFromAudio(
+            $fileData['base64'],
+            $fileData['mime_type'] ?: $mimeType
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Notion action dispatch
+    // -------------------------------------------------------------------------
+
     private function executeNotionAction(array $parsedIntent): array
     {
-        $database = $parsedIntent['database'] ?? 'tasks';
+        $database     = $parsedIntent['database']                        ?? 'tasks';
+        $filterPreset = $parsedIntent['properties']['filter_preset'] ?? 'all';
 
         return match ($parsedIntent['action'] ?? 'unknown') {
             'create_page'     => $this->notionService->createPage($parsedIntent, $database),
@@ -52,11 +83,16 @@ class WebhookController extends Controller
             ),
             'query_database'  => $this->notionService->queryDatabase(
                 $parsedIntent['properties']['filter'] ?? [],
-                $database
+                $database,
+                $filterPreset
             ),
             default => ['status' => 'unknown_action'],
         };
     }
+
+    // -------------------------------------------------------------------------
+    // Reply formatting
+    // -------------------------------------------------------------------------
 
     private function buildReplyMessage(array $parsedIntent, array $result): string
     {
@@ -69,8 +105,51 @@ class WebhookController extends Controller
             'create_page'     => "✅ Page '{$title}' created in Notion successfully.",
             'add_to_database' => "✅ Entry '{$title}' added to your {$dbLabel} database.",
             'update_page'     => "✅ Notion page updated successfully.",
-            'query_database'  => "🔍 Found " . count($result['results'] ?? []) . " results in your {$dbLabel} database.",
+            'query_database'  => $this->formatQueryResults($result, $database),
             default           => "⚠️ I couldn't understand the action. Please try rephrasing your request.",
         };
+    }
+
+    /**
+     * Format Notion query results as a human-readable numbered list.
+     * Limits the displayed items to 20 to stay within Telegram message limits.
+     */
+    private function formatQueryResults(array $result, string $database): string
+    {
+        $allItems = $result['results'] ?? [];
+        $total    = count($allItems);
+        $items    = array_slice($allItems, 0, 20);
+        $dbLabel  = ucfirst($database);
+
+        if ($total === 0) {
+            return "📋 No items found in your {$dbLabel} database.";
+        }
+
+        $lines = ["📋 {$dbLabel} ({$total} found):"];
+
+        foreach ($items as $index => $page) {
+            $lines[] = ($index + 1) . '. ' . $this->extractPageTitle($page);
+        }
+
+        if ($total > 20) {
+            $lines[] = '... and ' . ($total - 20) . ' more';
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Pull the plain-text title out of a Notion page object.
+     * Notion titles are stored in whichever property has type "title".
+     */
+    private function extractPageTitle(array $page): string
+    {
+        foreach ($page['properties'] ?? [] as $prop) {
+            if (isset($prop['type']) && $prop['type'] === 'title') {
+                return $prop['title'][0]['plain_text'] ?? 'Untitled';
+            }
+        }
+
+        return 'Untitled';
     }
 }

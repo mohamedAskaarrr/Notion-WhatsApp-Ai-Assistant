@@ -29,6 +29,7 @@ $app->singleton('config', function () {
                 'tasks_database_id' => '',
                 'ideas_database_id' => '',
                 'version'           => '2022-06-28',
+                'date_property'     => 'Date',
             ],
         ],
     ]);

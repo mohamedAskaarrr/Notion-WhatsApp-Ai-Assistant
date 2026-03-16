@@ -31,6 +31,18 @@ class WebhookControllerTest extends TestCase
         return $request;
     }
 
+    private function makeVoiceRequest(array $voice, int $chatId = 123456789): Request
+    {
+        $body = ['message' => ['voice' => $voice, 'chat' => ['id' => $chatId]]];
+
+        $request = Request::create('/api/webhook/telegram', 'POST', [], [], [], [
+            'CONTENT_TYPE' => 'application/json',
+        ], json_encode($body));
+        $request->setJson(new \Symfony\Component\HttpFoundation\ParameterBag($body));
+
+        return $request;
+    }
+
     public function test_handle_returns_ok_json_on_valid_request(): void
     {
         $gemini = Mockery::mock(GeminiService::class);
@@ -110,20 +122,20 @@ class WebhookControllerTest extends TestCase
                 'database'   => 'tasks',
                 'title'      => '',
                 'content'    => '',
-                'properties' => ['filter' => []],
+                'properties' => ['filter_preset' => 'all'],
             ]);
 
         $notion = Mockery::mock(NotionService::class);
         $notion->shouldReceive('queryDatabase')
             ->once()
-            ->with([], 'tasks')
+            ->with([], 'tasks', 'all')
             ->andReturn(['results' => [['id' => '1'], ['id' => '2']]]);
 
         $telegramBot = Mockery::mock(TelegramBotService::class);
         $telegramBot->shouldReceive('sendMessage')
             ->once()
             ->withArgs(function ($chatId, $text) {
-                return str_contains($text, '2 results');
+                return str_contains($text, 'Tasks') && str_contains($text, '2 found');
             });
 
         $controller = new WebhookController($gemini, $notion, $telegramBot);
@@ -165,6 +177,135 @@ class WebhookControllerTest extends TestCase
         $this->assertEquals(200, $response->getStatusCode());
     }
 
+    public function test_handle_processes_voice_message(): void
+    {
+        $voice = [
+            'file_id'   => 'voice-file-abc123',
+            'mime_type' => 'audio/ogg',
+            'duration'  => 5,
+        ];
+
+        $gemini = Mockery::mock(GeminiService::class);
+        $gemini->shouldReceive('parseIntentFromAudio')
+            ->once()
+            ->withArgs(function ($base64, $mimeType) {
+                return is_string($base64) && $mimeType === 'audio/ogg';
+            })
+            ->andReturn([
+                'action'     => 'add_to_database',
+                'database'   => 'tasks',
+                'title'      => 'Buy groceries',
+                'content'    => '',
+                'properties' => [],
+            ]);
+        $gemini->shouldNotReceive('parseIntent');
+
+        $notion = Mockery::mock(NotionService::class);
+        $notion->shouldReceive('addToDatabase')
+            ->once()
+            ->with(Mockery::any(), 'tasks')
+            ->andReturn(['object' => 'page', 'id' => 'page-voice-1']);
+
+        $telegramBot = Mockery::mock(TelegramBotService::class);
+        $telegramBot->shouldReceive('downloadVoiceFile')
+            ->once()
+            ->with('voice-file-abc123')
+            ->andReturn(['base64' => base64_encode('fake-audio'), 'mime_type' => 'audio/ogg']);
+        $telegramBot->shouldReceive('sendMessage')
+            ->once()
+            ->withArgs(function ($chatId, $text) {
+                return str_contains($text, 'Buy groceries') && str_contains($text, 'Tasks');
+            });
+
+        $controller = new WebhookController($gemini, $notion, $telegramBot);
+        $response   = $controller->handle($this->makeVoiceRequest($voice));
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertTrue(json_decode($response->getContent(), true)['ok']);
+    }
+
+    public function test_handle_query_results_formatted_as_numbered_list(): void
+    {
+        $notionPage = function (string $title): array {
+            return [
+                'properties' => [
+                    'Name' => [
+                        'type'  => 'title',
+                        'title' => [['plain_text' => $title]],
+                    ],
+                ],
+            ];
+        };
+
+        $gemini = Mockery::mock(GeminiService::class);
+        $gemini->shouldReceive('parseIntent')
+            ->once()
+            ->andReturn([
+                'action'     => 'query_database',
+                'database'   => 'tasks',
+                'title'      => '',
+                'content'    => '',
+                'properties' => ['filter_preset' => 'today'],
+            ]);
+
+        $notion = Mockery::mock(NotionService::class);
+        $notion->shouldReceive('queryDatabase')
+            ->once()
+            ->with([], 'tasks', 'today')
+            ->andReturn([
+                'results' => [
+                    $notionPage('Fix login bug'),
+                    $notionPage('Deploy hotfix'),
+                ],
+            ]);
+
+        $telegramBot = Mockery::mock(TelegramBotService::class);
+        $telegramBot->shouldReceive('sendMessage')
+            ->once()
+            ->withArgs(function ($chatId, $text) {
+                return str_contains($text, '2 found')
+                    && str_contains($text, 'Fix login bug')
+                    && str_contains($text, 'Deploy hotfix');
+            });
+
+        $controller = new WebhookController($gemini, $notion, $telegramBot);
+        $response   = $controller->handle($this->makeRequest("What are today's tasks?"));
+
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    public function test_handle_query_returns_empty_message_when_no_results(): void
+    {
+        $gemini = Mockery::mock(GeminiService::class);
+        $gemini->shouldReceive('parseIntent')
+            ->once()
+            ->andReturn([
+                'action'     => 'query_database',
+                'database'   => 'ideas',
+                'title'      => '',
+                'content'    => '',
+                'properties' => ['filter_preset' => 'all'],
+            ]);
+
+        $notion = Mockery::mock(NotionService::class);
+        $notion->shouldReceive('queryDatabase')
+            ->once()
+            ->andReturn(['results' => []]);
+
+        $telegramBot = Mockery::mock(TelegramBotService::class);
+        $telegramBot->shouldReceive('sendMessage')
+            ->once()
+            ->withArgs(function ($chatId, $text) {
+                return str_contains($text, 'No items found') && str_contains($text, 'Ideas');
+            });
+
+        $controller = new WebhookController($gemini, $notion, $telegramBot);
+        $response   = $controller->handle($this->makeRequest('List my ideas'));
+
+        $this->assertEquals(200, $response->getStatusCode());
+        $this->assertTrue(json_decode($response->getContent(), true)['ok']);
+    }
+
     public function test_handle_returns_ok_with_error_message_on_exception(): void
     {
         $gemini = Mockery::mock(GeminiService::class);
@@ -195,6 +336,7 @@ class WebhookControllerTest extends TestCase
         $telegramBot = Mockery::mock(TelegramBotService::class);
 
         $gemini->shouldNotReceive('parseIntent');
+        $gemini->shouldNotReceive('parseIntentFromAudio');
         $telegramBot->shouldNotReceive('sendMessage');
 
         $controller = new WebhookController($gemini, $notion, $telegramBot);

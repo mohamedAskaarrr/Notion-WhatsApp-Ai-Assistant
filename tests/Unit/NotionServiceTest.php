@@ -208,6 +208,69 @@ class NotionServiceTest extends TestCase
         $service->createPage(['title' => 'Test', 'content' => '', 'properties' => []]);
     }
 
+    public function test_query_database_applies_today_filter_preset(): void
+    {
+        $today = date('Y-m-d');
+
+        $httpClient = Mockery::mock(ClientInterface::class);
+        $httpClient->shouldReceive('request')
+            ->once()
+            ->with('POST', 'https://api.notion.com/v1/databases/test-tasks-db-id/query', Mockery::on(function ($options) use ($today) {
+                $filter = $options['json']['filter'] ?? null;
+
+                return $filter !== null
+                    && ($filter['property'] ?? null) === 'Date'
+                    && ($filter['date']['equals'] ?? null) === $today;
+            }))
+            ->andReturn(new Response(200, [], json_encode(['object' => 'list', 'results' => []])));
+
+        $service = $this->createService($httpClient);
+        $result  = $service->queryDatabase([], 'tasks', 'today');
+
+        $this->assertEquals('list', $result['object']);
+    }
+
+    public function test_query_database_applies_this_week_filter_preset(): void
+    {
+        $httpClient = Mockery::mock(ClientInterface::class);
+        $httpClient->shouldReceive('request')
+            ->once()
+            ->with('POST', 'https://api.notion.com/v1/databases/test-tasks-db-id/query', Mockery::on(function ($options) {
+                $filter = $options['json']['filter'] ?? null;
+
+                // this_week preset generates an "and" compound filter
+                return isset($filter['and'])
+                    && count($filter['and']) === 2
+                    && isset($filter['and'][0]['date']['on_or_after'])
+                    && isset($filter['and'][1]['date']['on_or_before']);
+            }))
+            ->andReturn(new Response(200, [], json_encode(['object' => 'list', 'results' => []])));
+
+        $service = $this->createService($httpClient);
+        $result  = $service->queryDatabase([], 'tasks', 'this_week');
+
+        $this->assertEquals('list', $result['object']);
+    }
+
+    public function test_query_database_explicit_filter_takes_precedence_over_preset(): void
+    {
+        $explicitFilter = ['property' => 'Status', 'select' => ['equals' => 'Done']];
+
+        $httpClient = Mockery::mock(ClientInterface::class);
+        $httpClient->shouldReceive('request')
+            ->once()
+            ->with('POST', Mockery::any(), Mockery::on(function ($options) use ($explicitFilter) {
+                return ($options['json']['filter'] ?? null) === $explicitFilter;
+            }))
+            ->andReturn(new Response(200, [], json_encode(['object' => 'list', 'results' => []])));
+
+        $service = $this->createService($httpClient);
+        // explicit filter should win even when a preset is provided
+        $result  = $service->queryDatabase($explicitFilter, 'tasks', 'today');
+
+        $this->assertEquals('list', $result['object']);
+    }
+
     private function createService(ClientInterface $httpClient): NotionService
     {
         return new class($httpClient) extends NotionService {
@@ -234,6 +297,10 @@ class NotionServiceTest extends TestCase
                 $prop = $reflection->getProperty('notionVersion');
                 $prop->setAccessible(true);
                 $prop->setValue($this, '2022-06-28');
+
+                $prop = $reflection->getProperty('dateProperty');
+                $prop->setAccessible(true);
+                $prop->setValue($this, 'Date');
             }
         };
     }

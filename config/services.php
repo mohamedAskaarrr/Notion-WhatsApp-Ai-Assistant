@@ -33,5 +33,7 @@ return [
         'tasks_database_id' => env('NOTION_TASKS_DATABASE_ID'),
         'ideas_database_id' => env('NOTION_IDEAS_DATABASE_ID'),
         'version'           => env('NOTION_VERSION', '2022-06-28'),
+        // Name of the date property in your Notion databases (used for "today" / "this week" filters)
+        'date_property'     => env('NOTION_DATE_PROPERTY', 'Date'),
     ],
 ];

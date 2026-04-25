@@ -63,9 +63,22 @@ class NotionService
     public function createTask(array|string $command, ?string $due = null): array
     {
         if (is_string($command)) {
+            // When a plain string title is passed, try to split off a trailing date token
+            // e.g. "buy groceries tomorrow" → title="buy groceries", due="tomorrow"
+            $knownDates = ['today', 'tomorrow', 'next monday', 'next tuesday', 'next wednesday',
+                           'next thursday', 'next friday', 'next saturday', 'next sunday'];
+            $lower = strtolower(trim($command));
+            $detectedDue = null;
+            foreach ($knownDates as $kd) {
+                if (str_ends_with($lower, $kd)) {
+                    $detectedDue = $kd;
+                    $command     = trim(substr($command, 0, strlen($command) - strlen($kd)));
+                    break;
+                }
+            }
             $command = [
                 'title' => $command,
-                'due' => $due,
+                'due'   => $due ?? $detectedDue,
             ];
         }
 
@@ -109,6 +122,22 @@ class NotionService
                 ]
             ];
 
+            // ── Due date ──────────────────────────────────────────────────
+            $rawDue = $command['due'] ?? null;
+            if ($rawDue) {
+                $normalizedDue = $this->normalizeDateString((string) $rawDue);
+                $dueProperty   = $this->resolvePropertyName(
+                    $dbProperties,
+                    'date',
+                    ['Due Date', 'Due date', 'Due', 'Date', 'Deadline']
+                );
+                if ($dueProperty) {
+                    $payload['properties'][$dueProperty] = [
+                        'date' => ['start' => $normalizedDue]
+                    ];
+                }
+            }
+
             $response = Http::withHeaders([
                 'Authorization' => "Bearer {$token}",
                 'Notion-Version' => self::NOTION_VERSION,
@@ -125,8 +154,9 @@ class NotionService
                 throw new Exception('Failed to create task in Notion');
             }
 
+            $dueSuffix = $rawDue ? " (due: {$rawDue})" : '';
             return [
-                'message' => "Task '{$title}' created successfully!",
+                'message' => "✅ Task '{$title}' created successfully{$dueSuffix}!",
                 'success' => true,
                 'data' => [
                     'task_id' => $response->json()['id'] ?? null

@@ -9,17 +9,28 @@ use Exception;
 class AIService
 {
     /**
-     * Google Gemini API endpoint
+     * Google Gemini API base URL (model is appended dynamically)
      */
-    private const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    private const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
+
+    /**
+     * Gemini models to try in order. The first one that responds successfully wins.
+     */
+    private const GEMINI_MODELS = [
+        'gemini-1.5-flash',
+        'gemini-2.0-flash',
+        'gemini-pro',
+    ];
 
     /**
      * Parse a natural language message and convert it to a structured command
      *
-     * @param string $message The user's natural language message
+     * @param string|null $message The user's natural language message
+     * @param string|null $audioData Base64 encoded audio data
+     * @param string $mimeType Mime type of the audio data
      * @return array|null Structured command with action and parameters
      */
-    public function parseMessage(string $message): ?array
+    public function parseMessage(?string $message = null, ?string $audioData = null, string $mimeType = 'audio/ogg'): ?array
     {
         try {
             $apiKey = config('services.gemini.key') ?? env('GEMINI_API_KEY');
@@ -32,59 +43,69 @@ class AIService
             $systemPrompt = $this->buildSystemPrompt();
 
             // Build the full prompt
-            $fullPrompt = $systemPrompt . "\n\nUser message: " . $message;
+            $promptText = $systemPrompt;
+            if (!empty($message)) {
+                $promptText .= "\n\nUser message: " . $message;
+            } elseif ($audioData) {
+                $promptText .= "\n\nPlease listen to the attached audio, transcribe it, and process it as the user message.";
+            }
 
-            // Make request to Google Gemini with API key in URL
-            $url = self::GEMINI_ENDPOINT . '?key=' . $apiKey;
-            
-            Log::info('Calling Gemini API', [
-                'url' => self::GEMINI_ENDPOINT,
-                'api_key_set' => !empty($apiKey)
-            ]);
+            $parts = [
+                ['text' => $promptText]
+            ];
 
-            $response = Http::withHeaders([
-                'Content-Type' => 'application/json',
-            ])->post($url, [
-                'contents' => [
-                    [
-                        'parts' => [
-                            [
-                                'text' => $fullPrompt
-                            ]
+            if ($audioData) {
+                $parts[] = [
+                    'inlineData' => [
+                        'mimeType' => $mimeType,
+                        'data' => $audioData
+                    ]
+                ];
+            }
+
+            // Try each model in order until one succeeds
+            $content = null;
+            foreach (self::GEMINI_MODELS as $model) {
+                $url = self::GEMINI_BASE . $model . ':generateContent?key=' . $apiKey;
+
+                Log::info('Calling Gemini API', ['model' => $model, 'has_audio' => !is_null($audioData)]);
+
+                $response = Http::withHeaders([
+                    'Content-Type' => 'application/json',
+                ])->post($url, [
+                    'contents' => [
+                        [
+                            'parts' => $parts
                         ]
                     ]
-                ]
-            ]);
-
-            Log::info('Gemini API Response', [
-                'status' => $response->status(),
-                'successful' => $response->successful()
-            ]);
-
-            if (!$response->successful()) {
-                Log::error('Gemini API Error', [
-                    'status' => $response->status(),
-                    'response' => $response->json()
                 ]);
-                throw new Exception('Failed to get response from Gemini');
+
+                Log::info('Gemini API Response', [
+                    'model'      => $model,
+                    'status'     => $response->status(),
+                    'successful' => $response->successful(),
+                ]);
+
+                if ($response->successful()) {
+                    $responseData = $response->json();
+                    $content = $responseData['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                    if ($content) {
+                        break; // found a working model
+                    }
+                } else {
+                    Log::warning('Gemini model failed, trying next', [
+                        'model'  => $model,
+                        'status' => $response->status(),
+                        'error'  => $response->json(),
+                    ]);
+                }
             }
-
-            $responseData = $response->json();
-
-            Log::info('Gemini Response Data', [
-                'data' => $responseData
-            ]);
-
-            // Extract the AI's response from Gemini
-            $content = $responseData['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
             if (!$content) {
-                throw new Exception('No content in Gemini response');
+                throw new Exception('All Gemini models failed to return a response');
             }
 
-            Log::info('Gemini Content', [
-                'content' => $content
-            ]);
+            Log::info('Gemini Content', ['content' => $content]);
 
             // Parse the JSON response from the AI (Gemini may wrap JSON in markdown fences)
             $cleanContent = trim($content);
